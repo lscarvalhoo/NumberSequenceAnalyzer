@@ -47,13 +47,19 @@ namespace Application.Services
         {
             var values = request.Values ?? new List<int>();
 
+            var stopwatchAscending = Stopwatch.StartNew();
             var ascending = new List<int>(values);
             ascending.Sort();
+            stopwatchAscending.Stop();
             _logger.LogInformation("Sorted in ascending: {@Ascending}", ascending);
+            _logger.LogInformation("Ascending ordered sequence  in {ElapsedMilliseconds} ms", stopwatchAscending.ElapsedMilliseconds);
 
+            var stopwatchDescending = Stopwatch.StartNew();
             var descending = new List<int>(ascending);
             descending.Reverse();
+            stopwatchDescending.Stop();
             _logger.LogInformation("Sorted in descending: {@Descending}", descending);
+            _logger.LogInformation("Descending ordered sequence {ElapsedMilliseconds} ms", stopwatchDescending.ElapsedMilliseconds);
 
             return new NumberSequenceOrderResponse
             {
