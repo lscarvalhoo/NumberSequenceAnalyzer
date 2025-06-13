@@ -4,17 +4,17 @@ using Domain.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using HelperAsync = Tests.Helper.AsyncEnumerableHelper;
 
 namespace Tests.Application.Services
-{ 
+{
     public class NumberSequenceServiceTests
     {
         private readonly INumberSequenceAnalyzer _analyzer = Substitute.For<INumberSequenceAnalyzer>();
+        private readonly INumberSequenceOrderer _orderer = Substitute.For<INumberSequenceOrderer>();
         private readonly ILogger<NumberSequenceService> _logger = Substitute.For<ILogger<NumberSequenceService>>();
 
         private NumberSequenceService CreateService() =>
-            new NumberSequenceService(_analyzer, _logger);
+            new NumberSequenceService(_analyzer, _orderer, _logger);
 
         [Fact]
         public async Task AnalyzeSequenceAsync_ShouldReturnCorrectResponse_WhenCalled()
@@ -53,10 +53,16 @@ namespace Tests.Application.Services
         public async Task OrderSequenceAsync_ShouldReturnOrderedSequences_WhenCalled()
         {
             var unsorted = new List<int> { 5, 3, 8, 1, 2 };
+            var sortedAscending = new List<int> { 1, 2, 3, 5, 8 };
+            var sortedDescending = new List<int> { 8, 5, 3, 2, 1 };
+
             var request = new NumberSequenceOrderRequest
             {
                 Values = unsorted.ToAsyncEnumerable()
             };
+
+            _orderer.OrderAscendingAsync(Arg.Any<IAsyncEnumerable<int>>()).Returns(sortedAscending);
+            _orderer.OrderDescending(Arg.Any<List<int>>()).Returns(sortedDescending);
 
             var service = CreateService();
 
@@ -64,9 +70,36 @@ namespace Tests.Application.Services
 
             result.Should().NotBeNull();
             result.SortedAscending.Should().BeInAscendingOrder();
-            result.SortedAscending.Should().BeEquivalentTo(new List<int> { 1, 2, 3, 5, 8 });
+            result.SortedAscending.Should().BeEquivalentTo(sortedAscending);
             result.SortedDescending.Should().BeInDescendingOrder();
-            result.SortedDescending.Should().BeEquivalentTo(new List<int> { 8, 5, 3, 2, 1 });
+            result.SortedDescending.Should().BeEquivalentTo(sortedDescending);
+
+            await _orderer.Received(1).OrderAscendingAsync(Arg.Any<IAsyncEnumerable<int>>());
+            _orderer.Received(1).OrderDescending(Arg.Any<List<int>>());
         }
+
+        [Fact]
+        public async Task OrderSequenceAsync_ShouldReturnSameCountInBothOrders()
+        {
+            var input = new List<int> { 7, 2, 9, 1 };
+            var asc = new List<int> { 1, 2, 7, 9 };
+            var desc = new List<int> { 9, 7, 2, 1 };
+
+            var request = new NumberSequenceOrderRequest
+            {
+                Values = input.ToAsyncEnumerable()
+            };
+
+            _orderer.OrderAscendingAsync(Arg.Any<IAsyncEnumerable<int>>()).Returns(asc);
+            _orderer.OrderDescending(Arg.Any<List<int>>()).Returns(desc);
+
+            var service = CreateService();
+
+            var result = await service.OrderSequenceAsync(request);
+
+            result.SortedAscending.Count.Should().Be(input.Count);
+            result.SortedDescending.Count.Should().Be(input.Count);
+        }
+
     }
 }

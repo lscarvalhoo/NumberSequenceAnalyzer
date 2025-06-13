@@ -1,6 +1,5 @@
 ﻿using Domain.Services;
 using FluentAssertions;
-using HelperAsync = Tests.Helper.AsyncEnumerableHelper;
 
 namespace Tests.Domain.Services
 {
@@ -50,7 +49,7 @@ namespace Tests.Domain.Services
         }
 
         [Theory]
-        [InlineData(new int[] { 1, 3, 1, 3, 1 }, true)] 
+        [InlineData(new int[] { 1, 3, 1, 3, 1 }, true)]
         [InlineData(new int[] { 1, 2, 3, 4, 5 }, false)]
         [InlineData(new int[] { 5, 1, 5, 1, 5 }, true)]
         [InlineData(new int[] { 1, 1, 1, 1 }, false)]

@@ -10,11 +10,16 @@ namespace Application.Services
     public class NumberSequenceService : INumberSequenceService
     {
         private readonly INumberSequenceAnalyzer _analyzer;
+        private readonly INumberSequenceOrderer _orderer;
         private readonly ILogger<NumberSequenceService> _logger;
 
-        public NumberSequenceService(INumberSequenceAnalyzer analyzer, ILogger<NumberSequenceService> logger)
+        public NumberSequenceService(
+            INumberSequenceAnalyzer analyzer,
+            INumberSequenceOrderer orderer,
+            ILogger<NumberSequenceService> logger)
         {
             _analyzer = analyzer;
+            _orderer = orderer;
             _logger = logger;
         }
 
@@ -22,18 +27,16 @@ namespace Application.Services
         {
             var stopwatch = Stopwatch.StartNew();
 
-            var buffered = request.Values!.ToListAsync();
-
-            var values = await buffered;
+            var values = await request.Values!.ToListAsync();
             var asyncStream = values.ToAsyncEnumerable();
 
             var result = new NumberSequenceResponse
             {
                 IsAscending = await _analyzer.IsAscendingAsync(asyncStream),
-                IsDescending = await _analyzer.IsDescendingAsync(values.ToAsyncEnumerable()),
-                HasDuplicates = await _analyzer.HasDuplicatesAsync(values.ToAsyncEnumerable()),
-                IsAlternating = await _analyzer.IsAlternatingAsync(values.ToAsyncEnumerable()),
-                AllPrimes = await _analyzer.AllPrimesAsync(values.ToAsyncEnumerable())
+                IsDescending = await _analyzer.IsDescendingAsync(asyncStream),
+                HasDuplicates = await _analyzer.HasDuplicatesAsync(asyncStream),
+                IsAlternating = await _analyzer.IsAlternatingAsync(asyncStream),
+                AllPrimes = await _analyzer.AllPrimesAsync(asyncStream)
             };
 
             stopwatch.Stop();
@@ -59,32 +62,28 @@ namespace Application.Services
             };
         }
 
-        #region Private
-
-        private List<int> DescendingSortAsync(List<int> values)
+        private List<int> DescendingSortAsync(List<int> ascending)
         {
-            var stopwatchDescending = Stopwatch.StartNew();
-            var descending = values.AsEnumerable().Reverse().ToList();
-            stopwatchDescending.Stop();
+            var stopwatchDesc = Stopwatch.StartNew();
+            var descending = _orderer.OrderDescending(ascending);
+            stopwatchDesc.Stop();
 
             _logger.LogInformation("Sorted in descending order: {@Descending}", descending);
-            _logger.LogInformation("Descending ordering took {ElapsedMilliseconds} ms", stopwatchDescending.ElapsedMilliseconds);
+            _logger.LogInformation("Descending ordering took {ElapsedMilliseconds} ms", stopwatchDesc.ElapsedMilliseconds);
+
             return descending;
         }
 
         private async Task<List<int>> AscendingSortAsync(NumberSequenceOrderRequest request)
         {
-            var values = await request.Values!.ToListAsync();
+            var stopwatchAsc = Stopwatch.StartNew();
+            var ascending = await _orderer.OrderAscendingAsync(request.Values);
+            stopwatchAsc.Stop();
 
-            var stopwatchAscending = Stopwatch.StartNew();
-            values.Sort();
-            stopwatchAscending.Stop();
+            _logger.LogInformation("Sorted in ascending order: {@Ascending}", ascending);
+            _logger.LogInformation("Ascending ordering took {ElapsedMilliseconds} ms", stopwatchAsc.ElapsedMilliseconds);
 
-            _logger.LogInformation("Sorted in ascending order: {@Ascending}", values);
-            _logger.LogInformation("Ascending ordering took {ElapsedMilliseconds} ms", stopwatchAscending.ElapsedMilliseconds);
-            return values;
+            return ascending;
         }
-
-        #endregion
     }
 }
