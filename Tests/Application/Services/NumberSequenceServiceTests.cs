@@ -17,18 +17,6 @@ namespace Tests.Application.Services
             new NumberSequenceService(_analyzer, _logger);
 
         [Fact]
-        public async Task AnalyzeSequenceAsync_ShouldThrowArgumentException_WhenValuesIsNull()
-        {
-            var service = CreateService();
-            var request = new NumberSequenceRequest { Values = null };
-
-            Func<Task> act = async () => await service.AnalyzeSequenceAsync(request);
-
-            await act.Should().ThrowAsync<ArgumentException>()
-                .WithMessage("Sequence cannot be null.");
-        }
-
-        [Fact]
         public async Task AnalyzeSequenceAsync_ShouldReturnCorrectResponse_WhenCalled()
         {
             var values = new List<int> { 1, 2, 3 };
@@ -59,18 +47,6 @@ namespace Tests.Application.Services
             await _analyzer.Received(1).HasDuplicatesAsync(Arg.Any<IAsyncEnumerable<int>>());
             await _analyzer.Received(1).IsAlternatingAsync(Arg.Any<IAsyncEnumerable<int>>());
             await _analyzer.Received(1).AllPrimesAsync(Arg.Any<IAsyncEnumerable<int>>());
-        }
-
-        [Fact]
-        public async Task OrderSequenceAsync_ShouldThrowArgumentException_WhenValuesIsNull()
-        {
-            var service = CreateService();
-            var request = new NumberSequenceOrderRequest { Values = null };
-
-            Func<Task> act = async () => await service.OrderSequenceAsync(request);
-
-            await act.Should().ThrowAsync<ArgumentException>()
-                .WithMessage("Sequence cannot be null.");
         }
 
         [Fact]

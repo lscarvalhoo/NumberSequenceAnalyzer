@@ -20,12 +20,9 @@ namespace Application.Services
 
         public async Task<NumberSequenceResponse> AnalyzeSequenceAsync(NumberSequenceRequest request)
         {
-            if (request.Values == null)
-                throw new ArgumentException("Sequence cannot be null.");
-
             var stopwatch = Stopwatch.StartNew();
 
-            var buffered = request.Values.ToListAsync();
+            var buffered = request.Values!.ToListAsync();
 
             var values = await buffered;
             var asyncStream = values.ToAsyncEnumerable();
@@ -48,11 +45,36 @@ namespace Application.Services
 
         public async Task<NumberSequenceOrderResponse> OrderSequenceAsync(NumberSequenceOrderRequest request)
         {
-            if (request.Values == null)
-                throw new ArgumentException("Sequence cannot be null.");
-
             var stopwatchTotal = Stopwatch.StartNew();
-            var values = await request.Values.ToListAsync();
+            List<int> ascending = await AscendingSortAsync(request);
+            List<int> descending = DescendingSortAsync(ascending);
+            stopwatchTotal.Stop();
+
+            _logger.LogInformation("Total ordering time: {ElapsedMilliseconds} ms", stopwatchTotal.ElapsedMilliseconds);
+
+            return new NumberSequenceOrderResponse
+            {
+                SortedAscending = ascending,
+                SortedDescending = descending
+            };
+        }
+
+        #region Private
+
+        private List<int> DescendingSortAsync(List<int> values)
+        {
+            var stopwatchDescending = Stopwatch.StartNew();
+            var descending = values.AsEnumerable().Reverse().ToList();
+            stopwatchDescending.Stop();
+
+            _logger.LogInformation("Sorted in descending order: {@Descending}", descending);
+            _logger.LogInformation("Descending ordering took {ElapsedMilliseconds} ms", stopwatchDescending.ElapsedMilliseconds);
+            return descending;
+        }
+
+        private async Task<List<int>> AscendingSortAsync(NumberSequenceOrderRequest request)
+        {
+            var values = await request.Values!.ToListAsync();
 
             var stopwatchAscending = Stopwatch.StartNew();
             values.Sort();
@@ -60,23 +82,9 @@ namespace Application.Services
 
             _logger.LogInformation("Sorted in ascending order: {@Ascending}", values);
             _logger.LogInformation("Ascending ordering took {ElapsedMilliseconds} ms", stopwatchAscending.ElapsedMilliseconds);
-
-            var stopwatchDescending = Stopwatch.StartNew();
-            var descending = values.AsEnumerable().Reverse().ToList();
-            stopwatchDescending.Stop();
-
-            _logger.LogInformation("Sorted in descending order: {@Descending}", descending);
-            _logger.LogInformation("Descending ordering took {ElapsedMilliseconds} ms", stopwatchDescending.ElapsedMilliseconds);
-
-            stopwatchTotal.Stop();
-            _logger.LogInformation("Total ordering time: {ElapsedMilliseconds} ms", stopwatchTotal.ElapsedMilliseconds);
-
-            return new NumberSequenceOrderResponse
-            {
-                SortedAscending = values,
-                SortedDescending = descending
-            };
+            return values;
         }
 
+        #endregion
     }
 }
