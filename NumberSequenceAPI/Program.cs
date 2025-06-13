@@ -26,7 +26,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
 builder.Services.AddScoped<INumberSequenceService, NumberSequenceService>();
 builder.Services.AddScoped<INumberSequenceAnalyzer, NumberSequenceAnalyzer>();
-builder.Services.AddScoped<IValidator<NumberSequenceRequest>, NumberSequenceRequestValidator>();
+builder.Services.AddScoped<IValidator<NumberSequenceRequest>, NumberSequenceRequestValidator>(); 
+builder.Services.AddScoped<IValidator<NumberSequenceOrderRequest>, NumberSequenceOrderRequestValidator>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

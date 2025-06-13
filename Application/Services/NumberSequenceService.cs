@@ -4,6 +4,7 @@ using Application.Models.Response;
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace Application.Services
 {
@@ -25,6 +26,7 @@ namespace Application.Services
                 Values = request.Values!
             };
 
+            var stopwatch = Stopwatch.StartNew();
             var result = new NumberSequenceResponse
             {
                 IsAscending = _analyzer.IsAscending(sequence),
@@ -33,10 +35,31 @@ namespace Application.Services
                 IsAlternating = _analyzer.IsAlternating(sequence),
                 AllPrimes = _analyzer.AllPrimes(sequence)
             };
+            stopwatch.Stop();
 
-            _logger.LogInformation("Analysis result: {@Result}", result);
+            _logger.LogInformation("Analysis result: {@Result}", result); 
+            _logger.LogInformation("Sequence analyzed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
 
             return result;
+        }
+
+        public NumberSequenceOrderResponse OrderSequence(NumberSequenceOrderRequest request)
+        {
+            var values = request.Values ?? new List<int>();
+
+            var ascending = new List<int>(values);
+            ascending.Sort();
+            _logger.LogInformation("Sorted in ascending: {@Ascending}", ascending);
+
+            var descending = new List<int>(ascending);
+            descending.Reverse();
+            _logger.LogInformation("Sorted in descending: {@Descending}", descending);
+
+            return new NumberSequenceOrderResponse
+            {
+                SortedAscending = ascending,
+                SortedDescending = descending
+            };
         }
     }
 }
