@@ -5,8 +5,8 @@ namespace Application.Interfaces
 {
     public interface INumberSequenceService
     {
-        NumberSequenceResponse AnalyzeSequence(NumberSequenceRequest request);
+        Task<NumberSequenceResponse> AnalyzeSequenceAsync(NumberSequenceRequest request);
 
-        NumberSequenceOrderResponse OrderSequence(NumberSequenceOrderRequest request);
+        Task<NumberSequenceOrderResponse> OrderSequenceAsync(NumberSequenceOrderRequest request);
     }
 }

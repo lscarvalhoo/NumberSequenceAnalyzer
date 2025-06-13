@@ -51,7 +51,7 @@ namespace API.Controllers
         [ProducesResponseType(typeof(NumberSequenceResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
-        public ActionResult<NumberSequenceResponse> Analyze([FromBody] NumberSequenceRequest request)
+        public async Task<ActionResult<NumberSequenceResponse>> Analyze([FromBody] NumberSequenceRequest request)
         {
             var validationResult = _validator.Validate(request);
             if (!validationResult.IsValid)
@@ -62,7 +62,7 @@ namespace API.Controllers
 
             try
             {
-                var result = _service.AnalyzeSequence(request);
+                var result = await _service.AnalyzeSequenceAsync(request);
 
                 _logger.LogInformation("Analysis completed successfully: {@Result}", result);
                 return Ok(result);
@@ -86,7 +86,7 @@ namespace API.Controllers
         [ProducesResponseType(typeof(NumberSequenceOrderResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
-        public ActionResult<NumberSequenceOrderResponse> Order([FromBody] NumberSequenceOrderRequest request)
+        public async Task<ActionResult<NumberSequenceOrderResponse>> Order([FromBody] NumberSequenceOrderRequest request)
         {
             var validationResult = _orderValidator.Validate(request);
             if (!validationResult.IsValid)
@@ -97,7 +97,7 @@ namespace API.Controllers
 
             try
             {
-                var result = _service.OrderSequence(request);
+                var result = await _service.OrderSequenceAsync(request);
 
                 _logger.LogInformation("Ordering completed. Ascending: {CountAsc}, Descending: {CountDesc}",
                     result.SortedAscending.Count, result.SortedDescending.Count);
@@ -110,6 +110,5 @@ namespace API.Controllers
                 return StatusCode(500, "Internal server error while ordering the sequence.");
             }
         }
-
     }
 }

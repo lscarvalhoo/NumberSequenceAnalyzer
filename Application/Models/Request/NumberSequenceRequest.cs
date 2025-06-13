@@ -5,6 +5,6 @@ namespace Application.Models.Request
     public class NumberSequenceRequest
     {
         [JsonPropertyName("valores")]
-        public List<int>? Values { get; set; }
+        public IAsyncEnumerable<int>? Values { get; set; }
     }
 }

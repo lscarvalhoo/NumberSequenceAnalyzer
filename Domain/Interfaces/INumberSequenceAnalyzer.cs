@@ -1,14 +1,12 @@
-﻿using Domain.Entities;
-
-namespace Domain.Interfaces
+﻿namespace Domain.Interfaces
 {
 
     public interface INumberSequenceAnalyzer
     {
-        bool IsAscending(NumberSequence sequence);
-        bool IsDescending(NumberSequence sequence);
-        bool HasDuplicates(NumberSequence sequence);
-        bool IsAlternating(NumberSequence sequence);
-        bool AllPrimes(NumberSequence sequence);
+        Task<bool> IsAscendingAsync(IAsyncEnumerable<int> values);
+        Task<bool> IsDescendingAsync(IAsyncEnumerable<int> values);
+        Task<bool> HasDuplicatesAsync(IAsyncEnumerable<int> values);
+        Task<bool> IsAlternatingAsync(IAsyncEnumerable<int> values);
+        Task<bool> AllPrimesAsync(IAsyncEnumerable<int> values);
     }
 }

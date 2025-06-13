@@ -6,32 +6,39 @@ namespace Domain.Services
 {
     public class NumberSequenceAnalyzer : INumberSequenceAnalyzer
     {
-        public bool IsAscending(NumberSequence sequence)
+        public async Task<bool> IsAscendingAsync(IAsyncEnumerable<int> values)
         {
-            for (int i = 1; i < sequence.Values.Count; i++)
+            int? previous = null;
+            await foreach (var current in values)
             {
-                if (sequence.Values[i] <= sequence.Values[i - 1])
+                if (previous.HasValue && current <= previous.Value)
                     return false;
+
+                previous = current;
             }
 
             return true;
         }
 
-        public bool IsDescending(NumberSequence sequence)
+        public async Task<bool> IsDescendingAsync(IAsyncEnumerable<int> values)
         {
-            for (int i = 1; i < sequence.Values.Count; i++)
+            int? previous = null;
+            await foreach (var current in values)
             {
-                if (sequence.Values[i] >= sequence.Values[i - 1])
+                if (previous.HasValue && current >= previous.Value)
                     return false;
+
+                previous = current;
             }
 
             return true;
         }
 
-        public bool HasDuplicates(NumberSequence sequence)
+
+        public async Task<bool> HasDuplicatesAsync(IAsyncEnumerable<int> values)
         {
             var seen = new HashSet<int>();
-            foreach (var value in sequence.Values)
+            await foreach (var value in values)
             {
                 if (!seen.Add(value))
                     return true;
@@ -40,34 +47,46 @@ namespace Domain.Services
             return false;
         }
 
-        public bool IsAlternating(NumberSequence sequence)
+        public async Task<bool> IsAlternatingAsync(IAsyncEnumerable<int> values)
         {
-            if (sequence.Values.Count < SequenceAnalysisConstants.MIN_SEQUENCE_LENGTH)
-                return false;
+            var buffer = new Queue<int>();
 
-            for (int index = SequenceAnalysisConstants.FIRST_INDEX;
-                     index < sequence.Values.Count - SequenceAnalysisConstants.NEXT_OFFSET;
-                     index++)
+            await foreach (var value in values)
             {
-                int previousValue = sequence.Values[index - SequenceAnalysisConstants.PREVIOUS_OFFSET];
-                int currentValue = sequence.Values[index];
-                int nextValue = sequence.Values[index + SequenceAnalysisConstants.NEXT_OFFSET];
+                buffer.Enqueue(value);
 
-                bool isPeak = currentValue > previousValue && currentValue > nextValue;
-                bool isValley = currentValue < previousValue && currentValue < nextValue;
+                if (buffer.Count < 3)
+                    continue;
 
-                bool isAlternatingAtCurrentIndex = isPeak || isValley;
+                int a = buffer.ElementAt(0);
+                int b = buffer.ElementAt(1);
+                int c = buffer.ElementAt(2);
 
-                if (!isAlternatingAtCurrentIndex)
+                bool isPeak = b > a && b > c;
+                bool isValley = b < a && b < c;
+
+                if (!isPeak && !isValley)
                     return false;
+
+                buffer.Dequeue();
             }
 
             return true;
         }
 
-        public bool AllPrimes(NumberSequence sequence)
+
+        public async Task<bool> AllPrimesAsync(IAsyncEnumerable<int> values)
         {
-            return sequence.Values.AsParallel().All(value => IsPrime(value));
+            var tasks = new List<Task<bool>>();
+
+            await foreach (var value in values)
+            {
+                int localValue = value;
+                tasks.Add(Task.Run(() => IsPrime(localValue)));
+            }
+
+            var results = await Task.WhenAll(tasks);
+            return results.All(x => x);
         }
 
         private bool IsPrime(int number)
@@ -84,8 +103,8 @@ namespace Domain.Services
             int boundary = (int)Math.Sqrt(number);
 
             for (int divisor = SequenceAnalysisConstants.FIRST_ODD_PRIME;
-                     divisor <= boundary;
-                     divisor += SequenceAnalysisConstants.INCREMENT_BY_TWO)
+                 divisor <= boundary;
+                 divisor += SequenceAnalysisConstants.INCREMENT_BY_TWO)
             {
                 if (number % divisor == SequenceAnalysisConstants.ZERO)
                     return false;

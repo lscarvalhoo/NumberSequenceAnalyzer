@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models.Request;
 using Application.Models.Response;
-using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -19,53 +18,65 @@ namespace Application.Services
             _logger = logger;
         }
 
-        public NumberSequenceResponse AnalyzeSequence(NumberSequenceRequest request)
+        public async Task<NumberSequenceResponse> AnalyzeSequenceAsync(NumberSequenceRequest request)
         {
-            var sequence = new NumberSequence
-            {
-                Values = request.Values!
-            };
+            if (request.Values == null)
+                throw new ArgumentException("Sequence cannot be null.");
 
             var stopwatch = Stopwatch.StartNew();
+
+            var buffered = request.Values.ToListAsync();
+
+            var values = await buffered;
+            var asyncStream = values.ToAsyncEnumerable();
+
             var result = new NumberSequenceResponse
             {
-                IsAscending = _analyzer.IsAscending(sequence),
-                IsDescending = _analyzer.IsDescending(sequence),
-                HasDuplicates = _analyzer.HasDuplicates(sequence),
-                IsAlternating = _analyzer.IsAlternating(sequence),
-                AllPrimes = _analyzer.AllPrimes(sequence)
+                IsAscending = await _analyzer.IsAscendingAsync(asyncStream),
+                IsDescending = await _analyzer.IsDescendingAsync(values.ToAsyncEnumerable()),
+                HasDuplicates = await _analyzer.HasDuplicatesAsync(values.ToAsyncEnumerable()),
+                IsAlternating = await _analyzer.IsAlternatingAsync(values.ToAsyncEnumerable()),
+                AllPrimes = await _analyzer.AllPrimesAsync(values.ToAsyncEnumerable())
             };
-            stopwatch.Stop();
 
-            _logger.LogInformation("Analysis result: {@Result}", result); 
+            stopwatch.Stop();
+            _logger.LogInformation("Analysis result: {@Result}", result);
             _logger.LogInformation("Sequence analyzed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
 
             return result;
         }
 
-        public NumberSequenceOrderResponse OrderSequence(NumberSequenceOrderRequest request)
+        public async Task<NumberSequenceOrderResponse> OrderSequenceAsync(NumberSequenceOrderRequest request)
         {
-            var values = request.Values ?? new List<int>();
+            if (request.Values == null)
+                throw new ArgumentException("Sequence cannot be null.");
+
+            var stopwatchTotal = Stopwatch.StartNew();
+            var values = await request.Values.ToListAsync();
 
             var stopwatchAscending = Stopwatch.StartNew();
-            var ascending = new List<int>(values);
-            ascending.Sort();
+            values.Sort();
             stopwatchAscending.Stop();
-            _logger.LogInformation("Sorted in ascending: {@Ascending}", ascending);
-            _logger.LogInformation("Ascending ordered sequence  in {ElapsedMilliseconds} ms", stopwatchAscending.ElapsedMilliseconds);
+
+            _logger.LogInformation("Sorted in ascending order: {@Ascending}", values);
+            _logger.LogInformation("Ascending ordering took {ElapsedMilliseconds} ms", stopwatchAscending.ElapsedMilliseconds);
 
             var stopwatchDescending = Stopwatch.StartNew();
-            var descending = new List<int>(ascending);
-            descending.Reverse();
+            var descending = values.AsEnumerable().Reverse().ToList();
             stopwatchDescending.Stop();
-            _logger.LogInformation("Sorted in descending: {@Descending}", descending);
-            _logger.LogInformation("Descending ordered sequence {ElapsedMilliseconds} ms", stopwatchDescending.ElapsedMilliseconds);
+
+            _logger.LogInformation("Sorted in descending order: {@Descending}", descending);
+            _logger.LogInformation("Descending ordering took {ElapsedMilliseconds} ms", stopwatchDescending.ElapsedMilliseconds);
+
+            stopwatchTotal.Stop();
+            _logger.LogInformation("Total ordering time: {ElapsedMilliseconds} ms", stopwatchTotal.ElapsedMilliseconds);
 
             return new NumberSequenceOrderResponse
             {
-                SortedAscending = ascending,
+                SortedAscending = values,
                 SortedDescending = descending
             };
         }
+
     }
 }

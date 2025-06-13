@@ -1,9 +1,7 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Application.Models.Request
+﻿namespace Application.Models.Request
 {
     public class NumberSequenceOrderRequest
     {
-        public List<int>? Values { get; set; }
+        public IAsyncEnumerable<int>? Values { get; set; }
     }
 }
